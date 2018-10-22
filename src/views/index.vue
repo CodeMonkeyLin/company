@@ -6,6 +6,8 @@
 <template>
     <div class="index">
         <Input search enter-button="Search" @on-search="Search" placeholder="Enter something..." class="search" />
+        <Cascader :data="qualificationList"></Cascader>
+        <Cascader :data="areaList"></Cascader>
         <Table :data="tableData" :columns="tableColumns" stripe></Table>
         <div style="margin: 10px;overflow: hidden">
             <div style="float: right;">
@@ -20,10 +22,12 @@
             return {
                 searchParams: {
                     search_text: '',
-                    page:''
+                    page:1 
                 },
                 ss: 1,
                 tableData: [],
+                qualificationList: [],
+                areaList: [],
                 tableColumns: [{
                         title: '企业代码',
                         key: 'company_code'
@@ -50,13 +54,16 @@
             }
         },
         created(){
-            this.getCompanyInfo()
+            this.getCompanyInfo();
+            this.getArea();
+            this.getQualification();
         },
         methods: {
             changePage (page) {
                 // The simulated data is changed directly here, and the actual usage scenario should fetch the data from the server
                 this.searchParams.page = page;
                 this.getCompanyInfo();
+                
             },
             getCompanyInfo(){
                 const that = this;
@@ -64,6 +71,27 @@
                 this.$http.get('http://127.0.0.1/company-list', {
                     params:that.searchParams
                 })
+                .then(function (response) {
+                    that.tableData=response.data.XCmdrResult.data_list
+                })
+                .catch(function (error) {
+                    console.log(error);
+                });
+            },
+            getArea(){
+                const that = this;
+                console.log(that.searchParams)
+                this.$http.get('http://127.0.0.1/area-list')
+                .then(function (response) {
+                    that.tableData=response.data.XCmdrResult.data_list
+                })
+                .catch(function (error) {
+                    console.log(error);
+                });
+            },
+            getQualification(){
+                const that = this;
+                this.$http.get('http://127.0.0.1/company-qualification')
                 .then(function (response) {
                     that.tableData=response.data.XCmdrResult.data_list
                 })
