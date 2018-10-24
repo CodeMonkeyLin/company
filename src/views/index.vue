@@ -15,7 +15,7 @@
                 <Input search enter-button="Search" @on-change="ChangeSearchText" label-in-value @on-search="SearchText" placeholder="请输入企业名称、法人或经营地址" class="search" />
             </div>
             <div class="searchItem">
-                <Cascader :data="qualificationList" @on-clear="ClearQualification" @on-change="SelectQualificationEnterprise" placeholder="请选择建筑资质"></Cascader>
+                <Cascader :data="qualificationList" @on-change="SelectQualificationEnterprise" placeholder="请选择建筑资质"></Cascader>
             </div>
             <div class="searchItem">
                 <Cascader change-on-select filterable :data="areaList" @on-change="SelectArea" placeholder="请选择城市或者省份（单选）"></Cascader>
@@ -85,17 +85,7 @@
                         title: '建筑资质',
                         key: 'qualification_enterprise',
                         render:(h,params)=>{
-                            if(params.row.qualification_enterprise.indexOf(this.searchParams.qualification_enterprise) >= 0){
-                                params.row.qualification_enterprise.split(',').map(item=>{
-                                    if(item.indexOf(this.searchParams.qualification_enterprise) >=0){
-                                        // console.log(item.trim())
-                                        
-                                    }
-                                })
-                            };
-                            return h('div', {
-                                
-                            }, [h('div',{
+                            return h('div', {}, [h('div',{
                                 style:{
                                     padding: '10px'
                                 }
@@ -114,7 +104,7 @@
                                                 padding: '4px',
                                                 listStyle:'none'
                                             }
-                                        }, item + ',')
+                                        }, item ? item + ',' : item)
                                     }))
                                 ])
                         }
@@ -126,9 +116,9 @@
             this.getCompanyInfo();
             this.getArea();
             this.getQualification();
-            this.$http.get('http://127.0.0.1/area-list')
+            this.$http.get('https://co-api.zhgcloud.com/area-list')
             .then(function (response) {
-                that.remoteArealist = Object.values(response.data.data.XCmdrResult);
+                that.remoteArealist = response.data.data.XCmdrResult;
                 that.loading =  false;
                 })
                 .catch(function (error) {
@@ -137,14 +127,14 @@
         },
         methods: {
             changePage (page) {
-                // The simulated data is changed directly here, and the actual usage scenario should fetch the data from the server
+                this.tableData = true;
                 this.searchParams.page = page;
                 this.getCompanyInfo();
                 
             },
             getCompanyInfo(){
                 const that = this;
-                this.$http.get('http://127.0.0.1/company-list', {
+                this.$http.get('https://co-api.zhgcloud.com/company-list', {
                     params:that.searchParams
                 })
                 .then(function (response) {
@@ -177,7 +167,7 @@
             },
             getQualification(){
                 const that = this;
-                this.$http.get('http://127.0.0.1/company-qualification')
+                this.$http.get('https://co-api.zhgcloud.com/company-qualification')
                 .then(function (response) {
                     that.qualificationList = response.data.data.XCmdrResult;
                 })
@@ -197,7 +187,9 @@
             SelectArea(value,selectedData){
                 if(selectedData.length){
                     this.searchParams.area = selectedData[selectedData.length-1].label;
-                }
+                }else{
+                    this.searchParams.area = '';
+                }   
             },
             SearchArea(value){
                  this.searchParams.area_list = value;
@@ -205,6 +197,8 @@
             SelectQualificationEnterprise(value,selectedData){
                 if(selectedData.length){
                     this.searchParams.qualification_enterprise = selectedData[selectedData.length-1].label;
+                }else{
+                    this.searchParams.qualification_enterprise = '';
                 }
             },
             Search(){
@@ -212,12 +206,6 @@
                 this.tableLoading = true;
                 this.searchParams.page = 1;
                 this.getCompanyInfo();
-            },
-            ClearQualification(){
-                this.searchParams.qualification_enterprise = '';
-            },
-            ClearArea(){
-                this.searchParams.area = '';
             },
             remoteMethod(query){
                 const that = this; 
