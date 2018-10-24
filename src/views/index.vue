@@ -1,17 +1,37 @@
 <style scoped lang="less">
 .search {
-  width: 80%;
+  width: 100%;
+}
+.searchItem {
+  margin: 10px 10px !important;
+  width: 500px;
+  //   float: left;
 }
 </style>
 <template>
     <div class="index">
-        <Input search enter-button="Search" @on-search="Search" placeholder="请输入企业名称或法人" class="search" />
-        <Cascader :data="qualificationList" placeholder="请选择建筑资质"></Cascader>
-        <!-- <Cascader change-on-select filterable :data="areaList" @on-change="SelectArea"></Cascader> -->
-        <Select v-model="model" multiple filterable remote :remote-method="remoteMethod" @on-change="SearchArea" :loading="loading" placeholder="请选择城市或者省份（可多选）">
-            <Option v-for="(option, index) in options" :value="option.value" :key="index">{{option.label}}</Option>
-        </Select>
-        <Table :data="tableData" :columns="tableColumns" stripe></Table>
+        <div>
+            <div class="searchItem">
+                <Input search enter-button="Search" @on-change="ChangeSearchText" label-in-value @on-search="SearchText" placeholder="请输入企业名称、法人或经营地址" class="search" />
+            </div>
+            <div class="searchItem">
+                <Cascader :data="qualificationList" @on-clear="ClearQualification" @on-change="SelectQualificationEnterprise" placeholder="请选择建筑资质"></Cascader>
+            </div>
+            <div class="searchItem">
+                <Cascader change-on-select filterable :data="areaList" @on-change="SelectArea" placeholder="请选择城市或者省份（单选）"></Cascader>
+            </div>
+            <div class="searchItem">
+                <Select v-model="model" multiple filterable remote :remote-method="remoteMethod" @on-change="SearchArea" :loading="loading" placeholder="请输入城市或者省份（可多选）">
+                    <Option v-for="(option, index) in options" :value="option.value" :key="index">{{option.label}}</Option>
+                </Select>
+            </div>
+            <div class="searchItem">
+                <Button type="primary" @click="Search" :loading="searchLoading">搜索</Button>
+                <Button @click="resetParams">重置</Button>
+            </div>
+        </div>
+
+        <Table :data="tableData" :columns="tableColumns" stripe :loading="tableLoading"></Table>
         <div style="margin: 10px;overflow: hidden">
             <div style="float: right;">
                 <Page :total="total_page_count" :current="searchParams.page" @on-change="changePage"></Page>
@@ -24,12 +44,14 @@
         data () {
             return {
                 searchParams: {
-                    search_text: '',
                     page:1 
                 },
                 tableData: [],
                 model: '',
-                loading: false,
+                area_list: [],
+                loading: true,
+                searchLoading: false,
+                tableLoading: true,
                 options: [],
                 total_page_count: 0,
                 remoteArealist: [],
@@ -39,24 +61,63 @@
                     {
                         title: '企业名称',
                         key: 'company_name',
+                        width: 300
                     },{
                         title: '法人',
                         key: 'legal_person',
+                        width: 100
                     },{
                         title: '企业经营地址',
                         key: 'manage_address',
                     },{
                         title: '省份',
                         key: 'province_name',
+                        width: 150
                     },{
                         title: '地级市',
                         key: 'city_name',
+                        width: 150
                     },{
                         title: '企业注册属地',
                         key: 'reg_address',
+                        width: 150
                     },{
                         title: '建筑资质',
-                        key:'qualification_enterprise'
+                        key: 'qualification_enterprise',
+                        render:(h,params)=>{
+                            if(params.row.qualification_enterprise.indexOf(this.searchParams.qualification_enterprise) >= 0){
+                                params.row.qualification_enterprise.split(',').map(item=>{
+                                    if(item.indexOf(this.searchParams.qualification_enterprise) >=0){
+                                        // console.log(item.trim())
+                                        
+                                    }
+                                })
+                            };
+                            return h('div', {
+                                
+                            }, [h('div',{
+                                style:{
+                                    padding: '10px'
+                                }
+                            },[...new Set( params.row.qualification_enterprise.split(','))].map(item => {
+                                        if(this.searchParams.qualification_enterprise && item.indexOf(this.searchParams.qualification_enterprise) >=0){
+                                            return h('span', {
+                                                style: {
+                                                    padding: '4px',
+                                                    color: 'red',
+                                                    listStyle:'none'
+                                                }
+                                            }, item + ',')
+                                        }
+                                        return h('span', {
+                                            style: {
+                                                padding: '4px',
+                                                listStyle:'none'
+                                            }
+                                        }, item + ',')
+                                    }))
+                                ])
+                        }
                     }]
             }
         },
@@ -67,7 +128,8 @@
             this.getQualification();
             this.$http.get('http://127.0.0.1/area-list')
             .then(function (response) {
-                that.remoteArealist = response.data.data.XCmdrResult.map(item => item.long_name);
+                that.remoteArealist = Object.values(response.data.data.XCmdrResult);
+                that.loading =  false;
                 })
                 .catch(function (error) {
                     console.log(error);
@@ -88,6 +150,8 @@
                 .then(function (response) {
                     that.tableData = response.data.data.XCmdrResult.data_list;
                     that.total_page_count = response.data.data.XCmdrResult.total_page_count;
+                    that.searchLoading = false;
+                    that.tableLoading = false;
                 })
                 .catch(function (error) {
                     console.log(error);
@@ -121,23 +185,45 @@
                     console.log(error);
                 });
             },
-            Search (value) {
-                this.searchParams.search_text = search_text;
+            ChangeSearchText(e) {
+                this.searchParams.search_text = e.target.value;
+            },
+            SearchText (value) {
+                this.tableLoading = true;
+                this.searchParams.search_text = value;
                 this.searchParams.page = 1;
                 this.getCompanyInfo();
             },
-            // SelectArea(value,selectedData){
-            //     this.searchParams.area = selectedData[selectedData.length-1].label;
-            // },
-            SearchArea(value,selectedData){
-                console.log(value,selectedData)
+            SelectArea(value,selectedData){
+                if(selectedData.length){
+                    this.searchParams.area = selectedData[selectedData.length-1].label;
+                }
+            },
+            SearchArea(value){
+                 this.searchParams.area_list = value;
+            },
+            SelectQualificationEnterprise(value,selectedData){
+                if(selectedData.length){
+                    this.searchParams.qualification_enterprise = selectedData[selectedData.length-1].label;
+                }
+            },
+            Search(){
+                this.searchLoading = true;
+                this.tableLoading = true;
+                this.searchParams.page = 1;
+                this.getCompanyInfo();
+            },
+            ClearQualification(){
+                this.searchParams.qualification_enterprise = '';
+            },
+            ClearArea(){
+                this.searchParams.area = '';
             },
             remoteMethod(query){
                 const that = this; 
                 if (query !== '') {
-                    this.loading = true;
-                    setTimeout(() => {
-                        this.loading = false;
+                    // this.loading = true;     
+                    setTimeout(()=>{
                         const list = that.remoteArealist.map(item => {
                             return {
                                 value: item,
@@ -145,16 +231,17 @@
                             };
                         });  
                         that.options = list.filter(item => item.label.indexOf(query) >= 0)
-                    }, 200);
+                    },200)
                 } else {
                     this.options = [];
                 }
             },
             resetParams(){
+                this.tableLoading = true;
                 this.searchParams = {
-                    search_text: '',
-                    page:''
+                    page: 1
                 }
+                this.getCompanyInfo();
             }
         }
     }
