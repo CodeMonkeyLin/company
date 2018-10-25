@@ -9,7 +9,6 @@ import 'iview/dist/styles/iview.css';
 
 Vue.use(VueRouter);
 Vue.use(iView);
-console.log('axios', axios)
 Vue.prototype.$http = axios;
 
 // 路由配置

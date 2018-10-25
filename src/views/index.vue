@@ -12,16 +12,21 @@
     <div class="index">
         <div>
             <div class="searchItem">
-                <Input search enter-button="Search" @on-change="ChangeSearchText" label-in-value @on-search="SearchText" placeholder="请输入企业名称、法人或经营地址" class="search" />
+                <Input search v-model="searchParams.search_text" enter-button="搜 索" @on-change="ChangeSearchText" label-in-value @on-search="SearchText" placeholder="请输入企业名称、法人或经营地址" class="search" />
             </div>
             <div class="searchItem">
-                <Cascader :data="qualificationList" @on-change="SelectQualificationEnterprise" placeholder="请选择建筑资质"></Cascader>
+                <Cascader v-model="qualificationModel" :data="qualificationList" @on-change="SelectQualificationEnterprise" placeholder="请选择建筑资质"></Cascader>
             </div>
             <div class="searchItem">
-                <Cascader change-on-select filterable :data="areaList" @on-change="SelectArea" placeholder="请选择城市或者省份（单选）"></Cascader>
+                <Select v-model="searchParams.qualification_enterprise_list" multiple filterable remote :remote-method="remoteQualifitionList" @on-change="SearchQualifitionList" :loading="qualificationLoading" placeholder="请输入建筑资质（可多选）">
+                    <Option v-for="(option, index) in qualificationOptions" :value="option.value" :key="index">{{option.label}}</Option>
+                </Select>
             </div>
             <div class="searchItem">
-                <Select v-model="model" multiple filterable remote :remote-method="remoteMethod" @on-change="SearchArea" :loading="loading" placeholder="请输入城市或者省份（可多选）">
+                <Cascader v-model="areaModel" change-on-select filterable :data="areaList" @on-change="SelectArea" placeholder="请选择城市或者省份（单选）"></Cascader>
+            </div>
+            <div class="searchItem">
+                <Select v-model="searchParams.area_list" multiple filterable remote :remote-method="remoteMethod" @on-change="SearchArea" :loading="loading" placeholder="请输入城市或者省份（可多选）">
                     <Option v-for="(option, index) in options" :value="option.value" :key="index">{{option.label}}</Option>
                 </Select>
             </div>
@@ -30,13 +35,15 @@
                 <Button @click="resetParams">重置</Button>
             </div>
         </div>
-
-        <Table :data="tableData" :columns="tableColumns" stripe :loading="tableLoading"></Table>
-        <div style="margin: 10px;overflow: hidden">
-            <div style="float: right;">
-                <Page :total="total_page_count" :current="searchParams.page" @on-change="changePage"></Page>
+        <Card>
+            <p slot="title">总数 <span style="color:#2d8cf0;">{{total_item_count}}</span></p>
+            <Table :data="tableData" :columns="tableColumns" stripe :loading="tableLoading"></Table>
+            <div style="margin: 10px;overflow: hidden">
+                <div style="float: right;">
+                    <Page :total="total_item_count" :page-size="current_per_page" :current="searchParams.page" @on-change="changePage"></Page>
+                </div>
             </div>
-        </div>
+        </Card>
     </div>
 </template>
 <script>
@@ -44,19 +51,26 @@
         data () {
             return {
                 searchParams: {
-                    page:1 
+                    qualification_enterprise_list: [],
+                    area_list: [],
+                    page: 1 
                 },
                 tableData: [],
-                model: '',
-                area_list: [],
                 loading: true,
                 searchLoading: false,
                 tableLoading: true,
+                qualificationLoading: true,
                 options: [],
                 total_page_count: 0,
+                total_item_count: 0,
+                current_per_page: 10,
                 remoteArealist: [],
                 qualificationList: [],
+                qualifitcationAllList: [],
                 areaList: [],
+                qualificationOptions: [],
+                qualificationModel: [],
+                areaModel: [],
                 tableColumns: [
                     {
                         title: '企业名称',
@@ -90,14 +104,16 @@
                                     padding: '10px'
                                 }
                             },[...new Set( params.row.qualification_enterprise.split(','))].map(item => {
-                                        if(this.searchParams.qualification_enterprise && item.indexOf(this.searchParams.qualification_enterprise) >=0){
-                                            return h('span', {
-                                                style: {
-                                                    padding: '4px',
-                                                    color: 'red',
-                                                    listStyle:'none'
-                                                }
-                                            }, item + ',')
+                                        if(this.searchParams.qualification_enterprise || this.searchParams.qualification_enterprise_list.length){
+                                            if(item.indexOf(this.searchParams.qualification_enterprise) >=0 || this.searchParams.qualification_enterprise_list.includes(item.trim())){
+                                                return h('span', {
+                                                    style: {
+                                                        padding: '4px',
+                                                        color: 'red',
+                                                        listStyle:'none'
+                                                    }
+                                                }, item + ',')
+                                            } 
                                         }
                                         return h('span', {
                                             style: {
@@ -120,26 +136,35 @@
             .then(function (response) {
                 that.remoteArealist = response.data.data.XCmdrResult;
                 that.loading =  false;
-                })
-                .catch(function (error) {
+            })
+            .catch(function (error) {
                     console.log(error);
-                });
+            });
+            this.$http.get('http://127.0.0.1/qualification-list')
+            .then(function (response) {
+                that.qualifitcationAllList = response.data.data.XCmdrResult;
+                that.qualificationLoading =  false;
+                })
+            .catch(function (error) {
+                    console.log(error);
+            });
         },
         methods: {
             changePage (page) {
-                this.tableData = true;
+                this.tableLoading = true;
                 this.searchParams.page = page;
-                this.getCompanyInfo();
-                
+                this.getCompanyInfo();  
             },
             getCompanyInfo(){
                 const that = this;
-                this.$http.get('https://co-api.zhgcloud.com/company-list', {
+                this.$http.get('http://127.0.0.1/company-list', {
                     params:that.searchParams
                 })
                 .then(function (response) {
                     that.tableData = response.data.data.XCmdrResult.data_list;
                     that.total_page_count = response.data.data.XCmdrResult.total_page_count;
+                    that.total_item_count = response.data.data.XCmdrResult.total_item_count;
+                    console.log(that.total_page_count);
                     that.searchLoading = false;
                     that.tableLoading = false;
                 })
@@ -201,6 +226,9 @@
                     this.searchParams.qualification_enterprise = '';
                 }
             },
+            SearchQualifitionList(value){
+                this.searchParams.qualification_enterprise_list = value; 
+            },
             Search(){
                 this.searchLoading = true;
                 this.tableLoading = true;
@@ -224,11 +252,30 @@
                     this.options = [];
                 }
             },
+            remoteQualifitionList(query){
+                const that = this; 
+                if (query !== '') {   
+                    setTimeout(()=>{
+                        const list = that.qualifitcationAllList.map(item => {
+                            return {
+                                value: item.qualification_enterprise,
+                                label: item.qualification_enterprise
+                            };
+                        });  
+                        that.qualificationOptions = list.filter(item => item.label.indexOf(query) >= 0);
+                    },200)
+                } else {
+                    this.qualificationOptions = [];
+                }
+            },
             resetParams(){
                 this.tableLoading = true;
                 this.searchParams = {
+                    qualification_enterprise_list: [],
                     page: 1
-                }
+                };
+                this.qualificationModel = [];
+                this.areaModel = [];
                 this.getCompanyInfo();
             }
         }
