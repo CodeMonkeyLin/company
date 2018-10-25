@@ -1,5 +1,5 @@
 const BaiduAk = 'kCUnbBKcPkIRCrqaG8GoPoTBC0hFB0v1';
-export const apiHostMap = {
+export const apiHost = {
     HOST: 'https://sa-api.zhgcloud.com',
     HOST_HARDWARE: 'https://sa-data-api.zhgcloud.com',
     TURING_HOST: 'https://turing.zhgcloud.com',
@@ -7,7 +7,7 @@ export const apiHostMap = {
     AC_HOST: 'https://ac-api.zhgcloud.com',
     CM_HOST: 'https://cm-api.zhgcloud.com',
     CP_HOST: 'https://cp-api.zhgcloud.com',
-    CO_HOST: 'https://c0-api.zhgcloud.com',
+    CO_HOST: 'https://co-api.zhgcloud.com',
     TEST_HOST: 'http://127.0.0.1',
     PR_HOST: "https://pr-i.gongchengbing.com",
     RESOURCES_HOST: 'https://resources.zhgcloud.com',

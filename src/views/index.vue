@@ -5,7 +5,6 @@
 .searchItem {
   margin: 10px 10px !important;
   width: 500px;
-  //   float: left;
 }
 </style>
 <template>
@@ -23,7 +22,7 @@
                 </Select>
             </div>
             <div class="searchItem">
-                <Cascader v-model="areaModel" change-on-select filterable :data="areaList" @on-change="SelectArea" placeholder="请选择城市或者省份（单选）"></Cascader>
+                <Cascader v-model="areaModel" change-on-select :data="areaList" @on-change="SelectArea" placeholder="请选择城市或者省份（单选）"></Cascader>
             </div>
             <div class="searchItem">
                 <Select v-model="searchParams.area_list" multiple filterable remote :remote-method="remoteMethod" @on-change="SearchArea" :loading="loading" placeholder="请输入城市或者省份（可多选）">
@@ -36,7 +35,12 @@
             </div>
         </div>
         <Card>
-            <p slot="title">总数 <span style="color:#2d8cf0;">{{total_item_count}}</span></p>
+            <div slot="title" style="height:32px;lineHeight:32px;">总数
+                <span style="color:#2d8cf0;">{{total_item_count}}</span>
+                <Button style="float:right;" @click="exportExcel">
+                    导出表格
+                </Button>
+            </div>
             <Table :data="tableData" :columns="tableColumns" stripe :loading="tableLoading"></Table>
             <div style="margin: 10px;overflow: hidden">
                 <div style="float: right;">
@@ -47,6 +51,8 @@
     </div>
 </template>
 <script>
+    import { apiHost } from '../apiHost.js';
+    import { urlencode } from '../utils/urlencode.js';
     export default {
         data () {
             return {
@@ -55,6 +61,7 @@
                     area_list: [],
                     page: 1 
                 },
+                exportExcelUrl: `${apiHost.CO_HOST}/excel/export`,
                 tableData: [],
                 loading: true,
                 searchLoading: false,
@@ -72,6 +79,13 @@
                 qualificationModel: [],
                 areaModel: [],
                 tableColumns: [
+                    {
+                        title: '序号',
+                        width: 100,
+                        render: (h,params)=>{
+                            return h('span',params.index + 1 + (this._data.searchParams.page - 1) * 10)
+                        }
+                    },
                     {
                         title: '企业名称',
                         key: 'company_name',
@@ -104,17 +118,24 @@
                                     padding: '10px'
                                 }
                             },[...new Set( params.row.qualification_enterprise.split(','))].map(item => {
-                                        if(this.searchParams.qualification_enterprise || this.searchParams.qualification_enterprise_list.length){
-                                            if(item.indexOf(this.searchParams.qualification_enterprise) >=0 || this.searchParams.qualification_enterprise_list.includes(item.trim())){
-                                                return h('span', {
-                                                    style: {
-                                                        padding: '4px',
-                                                        color: 'red',
-                                                        listStyle:'none'
-                                                    }
-                                                }, item + ',')
-                                            } 
+                                        if(this.searchParams.qualification_enterprise_list.length && this.searchParams.qualification_enterprise_list.includes(item.trim())){
+                                            return h('span', {
+                                                style: {
+                                                    padding: '4px',
+                                                    color: 'red',
+                                                    listStyle:'none'
+                                                }
+                                            }, item + ',')
                                         }
+                                        if(this.searchParams.qualification_enterprise && item.indexOf(this.searchParams.qualification_enterprise) >=0 ){
+                                            return h('span', {
+                                                style: {
+                                                    padding: '4px',
+                                                    color: 'red',
+                                                    listStyle:'none'
+                                                }
+                                            }, item + ',')
+                                        }       
                                         return h('span', {
                                             style: {
                                                 padding: '4px',
@@ -132,7 +153,7 @@
             this.getCompanyInfo();
             this.getArea();
             this.getQualification();
-            this.$http.get('https://co-api.zhgcloud.com/area-list')
+            this.$http.get(`${apiHost.CO_HOST}/area-list`)
             .then(function (response) {
                 that.remoteArealist = response.data.data.XCmdrResult;
                 that.loading =  false;
@@ -140,7 +161,7 @@
             .catch(function (error) {
                     console.log(error);
             });
-            this.$http.get('http://127.0.0.1/qualification-list')
+            this.$http.get(`${apiHost.CO_HOST}/qualification-list`)
             .then(function (response) {
                 that.qualifitcationAllList = response.data.data.XCmdrResult;
                 that.qualificationLoading =  false;
@@ -157,16 +178,16 @@
             },
             getCompanyInfo(){
                 const that = this;
-                this.$http.get('http://127.0.0.1/company-list', {
+                this.$http.get(`${apiHost.CO_HOST}/company-list`, {
                     params:that.searchParams
                 })
                 .then(function (response) {
                     that.tableData = response.data.data.XCmdrResult.data_list;
                     that.total_page_count = response.data.data.XCmdrResult.total_page_count;
                     that.total_item_count = response.data.data.XCmdrResult.total_item_count;
-                    console.log(that.total_page_count);
                     that.searchLoading = false;
                     that.tableLoading = false;
+                    that.exportExcelUrl = `${apiHost.CO_HOST}/excel/export?${urlencode(that.searchParams)}`;
                 })
                 .catch(function (error) {
                     console.log(error);
@@ -174,14 +195,14 @@
             },
             getArea(){
                 const that = this;
-                this.$http.get('https://resources.zhgcloud.com/areas/web-tree')
+                this.$http.get(`${apiHost.RESOURCES_HOST}/areas/web-tree`)
                 .then(function (response) {
                     that.areaList = response.data.XCmdrResult.map(item=>{
                         return {
-                            value: item.value,
+                            value: item.label,
                             label: item.label,
                             children:item.children[0].children ? item.children.map(r=>{
-                                return { value:r.value,label:r.label}
+                                return { value:r.label,label:r.label}
                             }): []
                         }
                     }) || [];
@@ -192,7 +213,7 @@
             },
             getQualification(){
                 const that = this;
-                this.$http.get('https://co-api.zhgcloud.com/company-qualification')
+                this.$http.get(`${apiHost.CO_HOST}/company-qualification`)
                 .then(function (response) {
                     that.qualificationList = response.data.data.XCmdrResult;
                 })
@@ -210,6 +231,7 @@
                 this.getCompanyInfo();
             },
             SelectArea(value,selectedData){
+                this.areaModel = value;
                 if(selectedData.length){
                     this.searchParams.area = selectedData[selectedData.length-1].label;
                 }else{
@@ -220,11 +242,13 @@
                  this.searchParams.area_list = value;
             },
             SelectQualificationEnterprise(value,selectedData){
+                this.qualificationModel = value;
                 if(selectedData.length){
                     this.searchParams.qualification_enterprise = selectedData[selectedData.length-1].label;
                 }else{
                     this.searchParams.qualification_enterprise = '';
                 }
+                console.log(this.searchParams.qualification_enterprise)
             },
             SearchQualifitionList(value){
                 this.searchParams.qualification_enterprise_list = value; 
@@ -277,6 +301,16 @@
                 this.qualificationModel = [];
                 this.areaModel = [];
                 this.getCompanyInfo();
+            },
+            exportExcel(){
+                if(this.total_item_count > 5000){
+                    this.$Modal.warning({
+                        title:'提示信息',
+                        content:'表格条目超过5000导出表格过慢，请增加具体筛选条件！'
+                    });
+                    return;
+                }
+                window.open(this.exportExcelUrl);
             }
         }
     }
