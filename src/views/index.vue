@@ -145,6 +145,33 @@
                                     }))
                                 ])
                         }
+                    },{
+                        title: '招标信息',
+                        key: 'project_info',
+                        width: 150,
+                        render:(h,params)=>{
+                            if(params.row.project_info.length){
+                                return h('span', {
+                                                style: {
+                                                    padding: '4px',
+                                                    color: '#2d8cf0',
+                                                    cursor: 'pointer'
+                                                },
+                                                on: {
+                                                    click: () => {
+                                                        this.$router.push({path: `/bidding/${params.row.id}`})
+                                                    }
+                                                }
+                                        }, '查看招标详情')
+                            }else{
+                                return h('span', {
+                                                style: {
+                                                    padding: '4px',
+                                                    color: "gray",
+                                                },
+                                        }, '暂无招标信息')
+                            }
+                        }
                     }]
             }
         },
