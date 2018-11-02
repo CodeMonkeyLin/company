@@ -6,12 +6,15 @@
   height: 50px;
   line-height: 50px;
 }
+.date {
+  margin-left: 100px;
+}
 </style>
 <template>
     <div class="index">
         <Card>
             <p slot="title">招标信息</p>
-            <div class="projectInfoItem" v-for="(option, index) in projectInfo.project_info" :key="index">项目{{index + 1}}：<a @click="linkToProject(option.result_info_url)">{{option.project_name}}</a></div>
+            <div class="projectInfoItem" v-for="(option, index) in projectInfo.project_info" :key="index">项目{{index + 1}}：<a @click="linkToProject(option.result_info_url)">{{option.project_name}}</a> <span class="date">公示时间：</span><a>{{option.date}}</a></div>
         </Card>
     </div>
 </template>
