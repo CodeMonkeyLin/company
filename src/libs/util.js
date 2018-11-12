@@ -2,7 +2,7 @@ let util = {
 
 };
 util.title = function (title) {
-    title = title ? title + ' - Home' : 'iView project';
+    title = title ? title + ' - Home' : '全国建筑企业资质查询';
     window.document.title = title;
 };
 

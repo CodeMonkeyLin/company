@@ -81,7 +81,7 @@
                 tableColumns: [
                     {
                         title: '序号',
-                        width: 100,
+                        width: 80,
                         render: (h,params)=>{
                             return h('span',params.index + 1 + (this._data.searchParams.page - 1) * 10)
                         }
@@ -89,26 +89,27 @@
                     {
                         title: '企业名称',
                         key: 'company_name',
-                        width: 300
+                        width: 200
                     },{
                         title: '法人',
                         key: 'legal_person',
-                        width: 100
+                        width: 80
                     },{
                         title: '企业经营地址',
                         key: 'manage_address',
+                        width: 250
                     },{
                         title: '省份',
                         key: 'province_name',
-                        width: 150
+                        width: 80
                     },{
                         title: '地级市',
                         key: 'city_name',
-                        width: 150
+                        width: 100
                     },{
                         title: '企业注册属地',
                         key: 'reg_address',
-                        width: 150
+                        width: 80
                     },{
                         title: '建筑资质',
                         key: 'qualification_enterprise',
@@ -159,7 +160,7 @@
                                                 },
                                                 on: {
                                                     click: () => {
-                                                        this.$router.push({path: `/bidding/${params.row.id}`})
+                                                        window.open(`/bidding/${params.row.id}`)
                                                     }
                                                 }
                                         }, '查看招标详情')
