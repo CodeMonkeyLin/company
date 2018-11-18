@@ -12,6 +12,10 @@ const routers = [
             title: ''
         },
         component: (resolve) => require(['./views/biddingDetail.vue'], resolve)
+    },
+    {
+        path: '/companyImportant',
+        component: (resolve) => require(['./views/companyImportant.vue'], resolve)
     }
 ];
 export default routers;

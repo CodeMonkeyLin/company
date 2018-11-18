@@ -6,10 +6,16 @@
   margin: 10px 10px !important;
   width: 500px;
 }
+.companyImportant {
+  position: fixed;
+  font-size: 20px;
+  right: 250px;
+  top: 10px;
+}
 </style>
 <template>
     <div class="index">
-        <div>
+        <div class="left">
             <div class="searchItem">
                 <Input search v-model="searchParams.search_text" enter-button="搜 索" @on-change="ChangeSearchText" label-in-value @on-search="SearchText" placeholder="请输入企业名称、法人或经营地址" class="search" />
             </div>
@@ -34,6 +40,7 @@
                 <Button @click="resetParams">重置</Button>
             </div>
         </div>
+        <a class="companyImportant" href="/companyImportant" target="_blank">查看重点企业中标信息</a>
         <Card>
             <div slot="title" style="height:32px;lineHeight:32px;">总数
                 <span style="color:#2d8cf0;">{{total_item_count}}</span>
